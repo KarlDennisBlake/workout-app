@@ -77,7 +77,26 @@ export default function WorkoutPage() {
         onSelectWeek={setActiveWeek}
       />
       <main>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.5rem" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginBottom: "0.5rem" }}>
+          {profile && (
+            <button
+              onClick={() => router.push("/edit")}
+              style={{
+                background: "none",
+                border: "1px solid var(--border)",
+                borderRadius: "6px",
+                padding: "0.35rem 0.8rem",
+                fontSize: "0.7rem",
+                color: "var(--muted)",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+              }}
+            >
+              Edit Routine
+            </button>
+          )}
           <button
             onClick={() => router.push("/onboarding")}
             style={{
