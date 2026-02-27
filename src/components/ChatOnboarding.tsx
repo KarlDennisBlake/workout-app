@@ -60,6 +60,28 @@ function extractRoutineFromMessages(messages: Message[]): {
   return null;
 }
 
+function looksReadyToGenerate(content: string): boolean {
+  // Detect when the AI says it's ready to build but didn't include JSON
+  const lower = content.toLowerCase();
+  const readyPhrases = [
+    "let me build",
+    "let me create",
+    "let me put together",
+    "let me craft",
+    "let me design",
+    "i'll build",
+    "i'll create",
+    "i'll put together",
+    "i have everything i need",
+    "i've got everything",
+    "here's your",
+    "generating your",
+  ];
+  const hasReadyPhrase = readyPhrases.some((p) => lower.includes(p));
+  const hasJson = content.includes("```json");
+  return hasReadyPhrase && !hasJson;
+}
+
 export function ChatOnboarding({ onComplete, mode = "create", currentRoutine, currentProfile }: ChatOnboardingProps) {
   const isEdit = mode === "edit";
   const initialContent = isEdit
@@ -102,6 +124,7 @@ export function ChatOnboarding({ onComplete, mode = "create", currentRoutine, cu
 
   async function sendToAPI(messagesToSend: Message[]) {
     setIsStreaming(true);
+    let shouldKeepStreaming = false;
 
     try {
       const endpoint = isEdit ? "/api/chat/edit" : "/api/chat";
@@ -155,6 +178,14 @@ export function ChatOnboarding({ onComplete, mode = "create", currentRoutine, cu
       const result = extractRoutineFromMessages(updatedMessages);
       if (result) {
         setRoutineReady(true);
+      } else if (looksReadyToGenerate(fullContent)) {
+        // AI said "let me build your routine" but didn't include JSON —
+        // auto-nudge it to generate in the next turn
+        shouldKeepStreaming = true;
+        const nudge: Message = { role: "user", content: "Go ahead and generate it now." };
+        const nudgedMessages = [...updatedMessages, nudge];
+        // Don't show the nudge in the UI, just send it seamlessly
+        sendToAPI(nudgedMessages);
       }
     } catch (error) {
       console.error("Chat error:", error);
@@ -167,7 +198,9 @@ export function ChatOnboarding({ onComplete, mode = "create", currentRoutine, cu
         },
       ]);
     } finally {
-      setIsStreaming(false);
+      if (!shouldKeepStreaming) {
+        setIsStreaming(false);
+      }
     }
   }
 
