@@ -315,6 +315,32 @@ main { padding: 2rem 2.5rem; max-width: 960px; }
 .done-btn:hover { border-color: var(--accent); color: var(--accent); }
 .day-card.done .done-btn { background: var(--accent); border-color: var(--accent); color: #fff; }
 
+/* ── DAY CARD COLLAPSE ── */
+.day-card-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.3s ease;
+}
+
+.day-card-body-inner {
+  overflow: hidden;
+}
+
+.day-card.collapsed {
+  border-color: var(--border);
+}
+
+.day-card.collapsed .dch {
+  border-bottom: none;
+}
+
+.dch-collapsed-hint {
+  font-size: 0.65rem;
+  color: var(--muted);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
 /* ── BLOCKS ── */
 .blocks { padding: 0.8rem 1.1rem; display: flex; flex-direction: column; gap: 0.35rem; }
 
