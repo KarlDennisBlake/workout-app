@@ -712,6 +712,101 @@ main { padding: 2rem 2.5rem; max-width: 960px; }
   background: #3a8a58;
 }
 
+/* ── WELCOME ── */
+.welcome-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.welcome-header {
+  background: var(--ink);
+  color: var(--bg);
+  padding: 2rem 2.5rem 1.8rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+[data-theme="dark"] .welcome-header {
+  background: #0f0e0c;
+}
+
+.welcome-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.welcome-heading {
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+  color: var(--ink);
+}
+
+.welcome-desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 2rem;
+  max-width: 380px;
+}
+
+.welcome-cta {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.9rem 2.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  transition: background 0.15s, transform 0.1s;
+  width: 100%;
+  max-width: 320px;
+}
+
+.welcome-cta:hover {
+  background: #245a35;
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .welcome-cta:hover {
+  background: #3a8a58;
+}
+
+.welcome-features {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.welcome-pill {
+  font-size: 0.65rem;
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 99px;
+  padding: 0.3rem 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 600px) {
   header, main { padding: 1.3rem; }
   .prog-bar-wrap { padding: 0.9rem 1.3rem; }
@@ -719,4 +814,6 @@ main { padding: 2rem 2.5rem; max-width: 960px; }
   .chat-header { padding: 1.2rem 1rem 1rem; }
   .chat-messages { padding: 0.8rem; }
   .chat-input-wrap { padding: 0.6rem 0.8rem; }
+  .welcome-header { padding: 1.3rem; }
+  .welcome-hero { padding: 2rem 1.3rem; }
 }

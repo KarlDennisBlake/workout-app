@@ -2,7 +2,7 @@
   "name": "Your Workout",
   "short_name": "Workout",
   "description": "Tailored home workout tracker with weekly routines",
-  "start_url": "/workout",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#1a1814",
   "theme_color": "#1a1814",
