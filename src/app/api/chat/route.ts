@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AIProvider, ChatMessage, getSystemPrompt } from "@/lib/ai-provider";
 import { MockProvider } from "@/lib/providers/mock";
+import { GeminiProvider } from "@/lib/providers/gemini";
+
+// Run as Edge Function for longer timeout + native streaming
+export const runtime = "edge";
 
 function getProvider(): AIProvider {
   const provider = process.env.AI_PROVIDER || "mock";
 
   switch (provider) {
-    case "gemini": {
-      const { GeminiProvider } = require("@/lib/providers/gemini");
+    case "gemini":
       return new GeminiProvider();
-    }
-    case "anthropic": {
-      const { AnthropicProvider } = require("@/lib/providers/anthropic");
-      return new AnthropicProvider();
-    }
     case "mock":
     default:
       return new MockProvider();
@@ -38,7 +36,6 @@ export async function POST(request: NextRequest) {
     return new Response(stream, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
-        "Transfer-Encoding": "chunked",
         "Cache-Control": "no-cache",
       },
     });

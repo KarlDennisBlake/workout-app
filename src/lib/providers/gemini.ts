@@ -15,9 +15,17 @@ export class GeminiProvider implements AIProvider {
     messages: ChatMessage[],
     systemPrompt: string
   ): Promise<ReadableStream<Uint8Array>> {
+    // Disable thinking/reasoning to speed up response time —
+    // routine JSON generation doesn't need chain-of-thought.
+    // The SDK types don't include thinkingConfig yet, so we cast.
+    const generationConfig = {
+      thinkingConfig: { thinkingBudget: 0 },
+    } as Parameters<typeof this.client.getGenerativeModel>[0]["generationConfig"];
+
     const model = this.client.getGenerativeModel({
       model: "gemini-2.5-flash",
       systemInstruction: systemPrompt,
+      generationConfig,
     });
 
     const history = messages.slice(0, -1).map((m) => ({
