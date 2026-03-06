@@ -12,38 +12,54 @@ export class MockProvider implements AIProvider {
 
   async chat(
     messages: ChatMessage[],
-    _systemPrompt: string
+    systemPrompt: string
+  ): Promise<ReadableStream<Uint8Array>> {
+    // Detect if this is a generation call by checking the system prompt
+    const isGenerationCall =
+      systemPrompt.includes("Output ONLY a JSON block") ||
+      systemPrompt.includes("output the complete modified routine as JSON");
+
+    if (isGenerationCall) {
+      return this.streamGenerationResponse();
+    }
+    return this.streamConversationResponse(messages);
+  }
+
+  private async streamConversationResponse(
+    messages: ChatMessage[]
   ): Promise<ReadableStream<Uint8Array>> {
     const userMessages = messages.filter((m) => m.role === "user");
     const turnIndex = userMessages.length - 1;
 
     let response: string;
-
     if (turnIndex < MOCK_RESPONSES.length) {
       response = MOCK_RESPONSES[turnIndex];
     } else {
-      // Final turn — generate the routine
-      response = `Great, I have everything I need! Let me build your custom routine...
-
-\`\`\`json
-${JSON.stringify(MOCK_ROUTINE, null, 2)}
-\`\`\`
-
-Your 4-week plan is ready! It's tailored to your goals and equipment. Hit **Start My Routine** to begin!`;
+      response =
+        "I have everything I need to build your routine! Here's what I've got:\n\n• **Stats:** noted your height, weight, age, and sex\n• **Equipment:** dumbbells and bench\n• **Goals:** build muscle and general fitness\n• **Constraints:** none\n\nGenerating your personalized 4-week plan now...";
     }
 
+    return this.streamText(response, 30);
+  }
+
+  private async streamGenerationResponse(): Promise<ReadableStream<Uint8Array>> {
+    const response = `\`\`\`json\n${JSON.stringify(MOCK_ROUTINE, null, 2)}\n\`\`\``;
+    return this.streamText(response, 5);
+  }
+
+  private streamText(
+    text: string,
+    delayMs: number
+  ): ReadableStream<Uint8Array> {
     const encoder = new TextEncoder();
-    const words = response.split(" ");
-    // Use faster streaming for the routine JSON (it's huge)
-    const isRoutineResponse = turnIndex >= MOCK_RESPONSES.length;
-    const delay = isRoutineResponse ? 5 : 30;
+    const words = text.split(" ");
 
     return new ReadableStream({
       async start(controller) {
         for (let i = 0; i < words.length; i++) {
           const word = (i === 0 ? "" : " ") + words[i];
           controller.enqueue(encoder.encode(word));
-          await new Promise((r) => setTimeout(r, delay));
+          await new Promise((r) => setTimeout(r, delayMs));
         }
         controller.close();
       },

@@ -5,10 +5,10 @@ export class AnthropicProvider implements AIProvider {
   name = "anthropic";
   private client: Anthropic;
 
-  constructor() {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY environment variable is required");
-    this.client = new Anthropic({ apiKey });
+  constructor(apiKey?: string) {
+    const key = apiKey || process.env.ANTHROPIC_API_KEY;
+    if (!key) throw new Error("Anthropic API key is required");
+    this.client = new Anthropic({ apiKey: key });
   }
 
   async chat(
@@ -17,7 +17,7 @@ export class AnthropicProvider implements AIProvider {
   ): Promise<ReadableStream<Uint8Array>> {
     const stream = this.client.messages.stream({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 8192,
+      max_tokens: 16384,
       system: systemPrompt,
       messages: messages.map((m) => ({
         role: m.role,

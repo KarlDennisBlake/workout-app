@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
+import { AISettings } from "./AISettings";
 import { Weeks, UserProfile } from "@/data/types";
+import { AIConfig, AI_CONFIG_KEY } from "@/lib/ai-config";
 
 interface Message {
   role: "user" | "assistant";
@@ -60,26 +61,39 @@ function extractRoutineFromMessages(messages: Message[]): {
   return null;
 }
 
-function looksReadyToGenerate(content: string): boolean {
-  // Detect when the AI says it's ready to build but didn't include JSON
+function isReadyToGenerate(content: string): boolean {
   const lower = content.toLowerCase();
-  const readyPhrases = [
-    "let me build",
-    "let me create",
-    "let me put together",
-    "let me craft",
-    "let me design",
-    "i'll build",
-    "i'll create",
-    "i'll put together",
-    "i have everything i need",
-    "i've got everything",
-    "here's your",
-    "generating your",
+  const readyMarkers = [
+    "i have everything i need to build your routine",
+    "got it, generating your updated routine now",
   ];
-  const hasReadyPhrase = readyPhrases.some((p) => lower.includes(p));
-  const hasJson = content.includes("```json");
-  return hasReadyPhrase && !hasJson;
+  // Also catch common variants the AI might say
+  const fallbackMarkers = [
+    "i have everything i need",
+    "i've got everything i need",
+    "let me build your routine",
+    "let me generate your routine",
+    "generating your personalized",
+  ];
+  return (
+    readyMarkers.some((m) => lower.includes(m)) ||
+    fallbackMarkers.some((m) => lower.includes(m))
+  );
+}
+
+function getAIConfig(): AIConfig | undefined {
+  try {
+    const stored = localStorage.getItem(AI_CONFIG_KEY);
+    if (stored) {
+      const config = JSON.parse(stored) as AIConfig;
+      if (config.enabled && config.provider !== "default" && config.apiKey) {
+        return config;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return undefined;
 }
 
 export function ChatOnboarding({ onComplete, mode = "create", currentRoutine, currentProfile }: ChatOnboardingProps) {
@@ -89,9 +103,13 @@ export function ChatOnboarding({ onComplete, mode = "create", currentRoutine, cu
     : "Hi, I'd like to create a custom workout routine.";
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [routineReady, setRoutineReady] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasStarted = useRef(false);
+  const generationAttempts = useRef(0);
+  const MAX_GENERATION_ATTEMPTS = 2;
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
@@ -104,14 +122,11 @@ export function ChatOnboarding({ onComplete, mode = "create", currentRoutine, cu
   }, [messages, scrollToBottom]);
 
   // Send initial greeting
-  // In create mode: send hidden user message to kick off the conversation
-  // In edit mode: show a static greeting and wait for the user's actual change request
   useEffect(() => {
     if (hasStarted.current) return;
     hasStarted.current = true;
 
     if (isEdit) {
-      // Static greeting — no API call, just show a welcome message
       setMessages([
         { role: "assistant", content: "I have your current routine loaded and ready to tweak. Describe the changes you'd like — for example:\n\n• \"Replace rest days with leg workouts\"\n• \"My shoulder hurts, swap out overhead presses\"\n• \"Add more core work on Wednesdays\"\n\nI'll make the changes and generate your updated routine right away." },
       ]);
@@ -122,11 +137,114 @@ export function ChatOnboarding({ onComplete, mode = "create", currentRoutine, cu
     }
   }, []);
 
-  async function sendToAPI(messagesToSend: Message[]) {
-    setIsStreaming(true);
-    let shouldKeepStreaming = false;
+  async function generateRoutine(conversationMessages: Message[]) {
+    setIsGenerating(true);
 
     try {
+      const aiConfig = getAIConfig();
+      const body: Record<string, unknown> = {
+        messages: isEdit
+          ? conversationMessages.slice(1) // skip static greeting
+          : conversationMessages,
+      };
+
+      if (isEdit && currentRoutine && currentProfile) {
+        body.mode = "edit";
+        body.routine = currentRoutine;
+        body.profile = currentProfile;
+      }
+
+      if (aiConfig) {
+        body.aiConfig = aiConfig;
+      }
+
+      const response = await fetch("/api/chat/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || "Generation failed");
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No stream reader");
+
+      const decoder = new TextDecoder();
+      let fullContent = "";
+
+      // Add empty assistant message to stream the generation into
+      // (ChatMessage already strips JSON blocks from display)
+      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        fullContent += chunk;
+
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            role: "assistant",
+            content: fullContent,
+          };
+          return updated;
+        });
+      }
+
+      // Extract the routine from the generation response
+      const result = extractRoutineFromMessages([
+        { role: "assistant", content: fullContent },
+      ]);
+      if (result) {
+        setRoutineReady(true);
+      } else {
+        // Generation failed to produce valid JSON — retry
+        generationAttempts.current += 1;
+        if (generationAttempts.current < MAX_GENERATION_ATTEMPTS) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: "Let me try generating that again...",
+            },
+          ]);
+          await generateRoutine(conversationMessages);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content:
+                "Sorry, I had trouble generating your routine. Please try refreshing the page and starting over.",
+            },
+          ]);
+        }
+      }
+    } catch (error) {
+      console.error("Generation error:", error);
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Sorry, I ran into an issue generating your routine: ${errorMsg}`,
+        },
+      ]);
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
+  async function sendToAPI(messagesToSend: Message[]) {
+    setIsStreaming(true);
+
+    try {
+      const aiConfig = getAIConfig();
       const endpoint = isEdit ? "/api/chat/edit" : "/api/chat";
       // In edit mode, skip the static assistant greeting (index 0) —
       // Gemini requires the first message to have role "user"
@@ -136,6 +254,9 @@ export function ChatOnboarding({ onComplete, mode = "create", currentRoutine, cu
         body.routine = currentRoutine;
         body.profile = currentProfile;
       }
+      if (aiConfig) {
+        body.aiConfig = aiConfig;
+      }
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -144,7 +265,8 @@ export function ChatOnboarding({ onComplete, mode = "create", currentRoutine, cu
       });
 
       if (!response.ok) {
-        throw new Error("Failed to get response");
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || "Failed to get response");
       }
 
       const reader = response.body?.getReader();
@@ -173,34 +295,32 @@ export function ChatOnboarding({ onComplete, mode = "create", currentRoutine, cu
         });
       }
 
-      // Check if routine was generated
+      // Check if the AI is ready to generate
       const updatedMessages = [...messagesToSend, { role: "assistant" as const, content: fullContent }];
+
+      // Defensive: check if the AI somehow included JSON directly
       const result = extractRoutineFromMessages(updatedMessages);
       if (result) {
         setRoutineReady(true);
-      } else if (looksReadyToGenerate(fullContent)) {
-        // AI said "let me build your routine" but didn't include JSON —
-        // auto-nudge it to generate in the next turn
-        shouldKeepStreaming = true;
-        const nudge: Message = { role: "user", content: "Go ahead and generate it now." };
-        const nudgedMessages = [...updatedMessages, nudge];
-        // Don't show the nudge in the UI, just send it seamlessly
-        sendToAPI(nudgedMessages);
+      } else if (isReadyToGenerate(fullContent)) {
+        // AI has gathered all info — trigger separate generation call
+        setIsStreaming(false);
+        generationAttempts.current = 0;
+        await generateRoutine(updatedMessages);
+        return; // skip the finally setIsStreaming(false) since we already did it
       }
     } catch (error) {
       console.error("Chat error:", error);
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content:
-            "Sorry, I ran into an issue. Please try again or refresh the page.",
+          content: `Sorry, I ran into an issue: ${errorMsg}`,
         },
       ]);
     } finally {
-      if (!shouldKeepStreaming) {
-        setIsStreaming(false);
-      }
+      setIsStreaming(false);
     }
   }
 
@@ -221,10 +341,19 @@ export function ChatOnboarding({ onComplete, mode = "create", currentRoutine, cu
   return (
     <div className="chat-container">
       <div className="chat-header">
-        <h1 style={{ fontFamily: "var(--font-syne), 'Syne', sans-serif" }}>
-          {isEdit ? "Edit Routine" : "Your Workout"}
-        </h1>
-        <p>{isEdit ? "What would you like to change?" : "Let\u0027s build your plan"}</p>
+        <div>
+          <h1 style={{ fontFamily: "var(--font-syne), 'Syne', sans-serif" }}>
+            {isEdit ? "Edit Routine" : "Your Workout"}
+          </h1>
+          <p>{isEdit ? "What would you like to change?" : "Let\u0027s build your plan"}</p>
+        </div>
+        <button
+          className="settings-gear"
+          onClick={() => setShowSettings(true)}
+          title="AI Settings"
+        >
+          &#9881;
+        </button>
       </div>
       <div className="chat-messages" ref={scrollRef}>
         {messages
@@ -232,14 +361,19 @@ export function ChatOnboarding({ onComplete, mode = "create", currentRoutine, cu
           .map((msg, i) => (
             <ChatMessage key={i} role={msg.role} content={msg.content} />
           ))}
-        {isStreaming && (
+        {isStreaming && !isGenerating && (
           <div className="chat-typing">
             <span />
             <span />
             <span />
           </div>
         )}
-        {routineReady && !isStreaming && (
+        {isGenerating && (
+          <div className="chat-typing">
+            <span className="generating-label">Generating your routine...</span>
+          </div>
+        )}
+        {routineReady && !isStreaming && !isGenerating && (
           <div className="chat-action">
             <button className="chat-start-btn" onClick={handleStartRoutine}>
               {isEdit ? "Save Changes" : "Start My Routine"} &#10148;
@@ -249,7 +383,7 @@ export function ChatOnboarding({ onComplete, mode = "create", currentRoutine, cu
       </div>
       <ChatInput
         onSend={handleSend}
-        disabled={isStreaming}
+        disabled={isStreaming || isGenerating}
         placeholder={
           routineReady
             ? isEdit
@@ -260,6 +394,7 @@ export function ChatOnboarding({ onComplete, mode = "create", currentRoutine, cu
               : "Tell me about yourself..."
         }
       />
+      {showSettings && <AISettings onClose={() => setShowSettings(false)} />}
     </div>
   );
 }

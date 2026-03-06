@@ -5,27 +5,22 @@ export class GeminiProvider implements AIProvider {
   name = "gemini";
   private client: GoogleGenerativeAI;
 
-  constructor() {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error("GEMINI_API_KEY environment variable is required");
-    this.client = new GoogleGenerativeAI(apiKey);
+  constructor(apiKey?: string) {
+    const key = apiKey || process.env.GEMINI_API_KEY;
+    if (!key) throw new Error("Gemini API key is required");
+    this.client = new GoogleGenerativeAI(key);
   }
 
   async chat(
     messages: ChatMessage[],
     systemPrompt: string
   ): Promise<ReadableStream<Uint8Array>> {
-    // Disable thinking/reasoning to speed up response time —
-    // routine JSON generation doesn't need chain-of-thought.
-    // The SDK types don't include thinkingConfig yet, so we cast.
-    const generationConfig = {
-      thinkingConfig: { thinkingBudget: 0 },
-    } as Parameters<typeof this.client.getGenerativeModel>[0]["generationConfig"];
-
     const model = this.client.getGenerativeModel({
       model: "gemini-2.5-flash",
       systemInstruction: systemPrompt,
-      generationConfig,
+      generationConfig: {
+        maxOutputTokens: 16384,
+      },
     });
 
     const history = messages.slice(0, -1).map((m) => ({

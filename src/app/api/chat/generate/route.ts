@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ChatMessage, getConversationSystemPrompt } from "@/lib/ai-provider";
+import { ChatMessage, getGenerateSystemPrompt, getEditGenerateSystemPrompt } from "@/lib/ai-provider";
 import { AIConfig } from "@/lib/ai-config";
 import { getProvider } from "@/lib/provider-factory";
 
@@ -8,8 +8,11 @@ export const runtime = "edge";
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, aiConfig } = (await request.json()) as {
+    const { messages, mode, routine, profile, aiConfig } = (await request.json()) as {
       messages: ChatMessage[];
+      mode?: "create" | "edit";
+      routine?: Record<string, unknown>;
+      profile?: Record<string, unknown>;
       aiConfig?: AIConfig;
     };
 
@@ -21,7 +24,17 @@ export async function POST(request: NextRequest) {
     }
 
     const provider = getProvider(aiConfig);
-    const systemPrompt = getConversationSystemPrompt();
+    let systemPrompt: string;
+
+    if (mode === "edit" && routine && profile) {
+      systemPrompt = getEditGenerateSystemPrompt(
+        JSON.stringify(routine, null, 2),
+        JSON.stringify(profile, null, 2)
+      );
+    } else {
+      systemPrompt = getGenerateSystemPrompt();
+    }
+
     const stream = await provider.chat(messages, systemPrompt);
 
     return new Response(stream, {
@@ -31,8 +44,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Chat API error:", error);
-    const message = error instanceof Error ? error.message : "Failed to generate response";
+    console.error("Generate API error:", error);
+    const message = error instanceof Error ? error.message : "Failed to generate routine";
     return NextResponse.json(
       { error: message },
       { status: 500 }

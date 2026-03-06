@@ -1,29 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AIProvider, ChatMessage, getEditSystemPrompt } from "@/lib/ai-provider";
-import { MockProvider } from "@/lib/providers/mock";
-import { GeminiProvider } from "@/lib/providers/gemini";
+import { ChatMessage, getEditConversationSystemPrompt } from "@/lib/ai-provider";
+import { AIConfig } from "@/lib/ai-config";
+import { getProvider } from "@/lib/provider-factory";
 
 // Run as Edge Function for longer timeout + native streaming
 export const runtime = "edge";
 
-function getProvider(): AIProvider {
-  const provider = process.env.AI_PROVIDER || "mock";
-
-  switch (provider) {
-    case "gemini":
-      return new GeminiProvider();
-    case "mock":
-    default:
-      return new MockProvider();
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const { messages, routine, profile } = await request.json() as {
+    const { messages, routine, profile, aiConfig } = await request.json() as {
       messages: ChatMessage[];
       routine: Record<string, unknown>;
       profile: Record<string, unknown>;
+      aiConfig?: AIConfig;
     };
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -40,8 +29,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const provider = getProvider();
-    const systemPrompt = getEditSystemPrompt(
+    const provider = getProvider(aiConfig);
+    const systemPrompt = getEditConversationSystemPrompt(
       JSON.stringify(routine, null, 2),
       JSON.stringify(profile, null, 2)
     );
@@ -55,8 +44,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Chat edit API error:", error);
+    const message = error instanceof Error ? error.message : "Failed to generate response";
     return NextResponse.json(
-      { error: "Failed to generate response" },
+      { error: message },
       { status: 500 }
     );
   }

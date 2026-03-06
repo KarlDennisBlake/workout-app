@@ -843,3 +843,197 @@ main { padding: 2rem 2.5rem; max-width: 960px; }
   .welcome-header { padding: 1.3rem; }
   .welcome-hero { padding: 2rem 1.3rem; }
 }
+
+/* ── AI SETTINGS MODAL ── */
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.settings-modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.settings-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.settings-close:hover { color: var(--ink); }
+
+.settings-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.settings-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.settings-select,
+.settings-input {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.85rem;
+  transition: border-color 0.15s;
+}
+
+.settings-select:focus,
+.settings-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.settings-hint {
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  gap: 0.5rem;
+}
+
+.settings-actions-right {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.settings-btn-save,
+.settings-btn-cancel,
+.settings-btn-clear {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.settings-btn-save {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+}
+
+.settings-btn-save:hover { opacity: 0.9; }
+.settings-btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.settings-btn-cancel {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.settings-btn-cancel:hover { color: var(--ink); border-color: var(--ink); }
+
+.settings-btn-clear {
+  background: none;
+  border: none;
+  color: var(--accent2);
+  font-size: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.settings-btn-clear:hover { text-decoration: underline; }
+
+/* Settings gear button — used in chat header and welcome page */
+.settings-gear {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0.3rem;
+  transition: color 0.15s;
+  line-height: 1;
+}
+
+.settings-gear:hover { color: var(--ink); }
+
+.welcome-advanced {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: inherit;
+  letter-spacing: 0.03em;
+  transition: color 0.15s;
+}
+
+.welcome-advanced:hover { color: var(--ink); }
+.welcome-advanced svg { width: 14px; height: 14px; }
+
+/* Generating label in chat */
+.generating-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
