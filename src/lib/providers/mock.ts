@@ -47,6 +47,17 @@ export class MockProvider implements AIProvider {
     return this.streamText(response, 5);
   }
 
+  async generateJSON(): Promise<ReadableStream<Uint8Array>> {
+    const json = JSON.stringify(MOCK_ROUTINE.routine, null, 2);
+    const encoder = new TextEncoder();
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(json));
+        controller.close();
+      },
+    });
+  }
+
   private streamText(
     text: string,
     delayMs: number

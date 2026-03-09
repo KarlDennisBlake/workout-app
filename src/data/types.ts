@@ -41,6 +41,21 @@ export interface UserProfile {
   createdAt: string;
 }
 
+export interface IntakeData {
+  height: string;
+  weight: number;
+  weightUnit: "lb" | "kg";
+  age: number;
+  sex: "male" | "female" | "other";
+  equipment: string[];
+  equipmentDetails: string;
+  goals: string[];
+  goalsDetails: string;
+  constraints: string;
+  daysPerWeek: number;
+  timePerSession: string;
+}
+
 export interface DayState {
   done: boolean;
   ex: boolean[];

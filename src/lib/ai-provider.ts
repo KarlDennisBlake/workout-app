@@ -14,6 +14,10 @@ export interface AIProvider {
     messages: ChatMessage[],
     systemPrompt: string
   ): Promise<ReadableStream<Uint8Array>>;
+  generateJSON?(
+    prompt: string,
+    systemPrompt: string
+  ): Promise<ReadableStream<Uint8Array>>;
 }
 
 export function getConversationSystemPrompt(): string {
@@ -174,4 +178,63 @@ IMPORTANT RULES FOR THE ROUTINE:
 - Use only the equipment the user has available
 - Add motivational pushupNote on workout days
 - For rest days, use restDay: true and include an encouraging restMsg`;
+}
+
+export function getIntakeGenerateSystemPrompt(): string {
+  return `You are a fitness routine generator. You will receive structured data about a user (their stats, equipment, goals, constraints, and schedule). Your ONLY job is to output a complete 4-week workout routine as JSON.
+
+OUTPUT RULES:
+- Output ONLY valid JSON — no markdown fences, no commentary, no explanations
+- The response must be parseable by JSON.parse() directly
+
+The JSON must follow this EXACT structure:
+
+{
+  "1": {
+    "label": "Week 1 — Build the Base",
+    "desc": "Short description of the week's focus.",
+    "pill": "Foundation",
+    "days": [
+      {
+        "name": "Monday",
+        "tag": "home",
+        "tagLabel": "Home Day",
+        "blocks": [
+          {
+            "label": "Block Name",
+            "time": "~10 min",
+            "exercises": [
+              { "name": "Exercise Name", "detail": "3x12" }
+            ]
+          }
+        ],
+        "pushupNote": "Optional motivational note"
+      },
+      {
+        "name": "Saturday",
+        "tag": "rest",
+        "tagLabel": "Rest",
+        "restDay": true,
+        "restMsg": "Rest day message."
+      }
+    ]
+  },
+  "2": { ... },
+  "3": { ... },
+  "4": { ... }
+}
+
+IMPORTANT RULES FOR THE ROUTINE:
+- Generate exactly 4 weeks with 7 days each (Monday through Sunday)
+- The user's daysPerWeek preference determines how many workout days vs rest days per week
+- Tag types: "home" for workout days, "rest" for rest days
+- Each workout day should have 2-4 blocks with 2-4 exercises each
+- Include warm-up blocks on full workout days
+- Progressive overload across weeks (more reps, sets, or intensity)
+- Respect ALL user constraints (no jumping if in apartment, avoid exercises that aggravate injuries, etc.)
+- Use ONLY the equipment the user has available
+- Keep workout duration within the user's stated time preference
+- Add motivational pushupNote on workout days
+- For rest days, use restDay: true and include an encouraging restMsg
+- bikeDay: true only if the user mentions cycling/biking in constraints or goals`;
 }

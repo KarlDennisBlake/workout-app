@@ -1,6 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AIProvider, ChatMessage } from "../ai-provider";
 
+type GeminiGenerationConfig = Parameters<
+  InstanceType<typeof GoogleGenerativeAI>["getGenerativeModel"]
+>[0]["generationConfig"];
+
 export class GeminiProvider implements AIProvider {
   name = "gemini";
   private client: GoogleGenerativeAI;
@@ -31,6 +35,39 @@ export class GeminiProvider implements AIProvider {
     const chat = model.startChat({ history });
     const lastMessage = messages[messages.length - 1];
     const result = await chat.sendMessageStream(lastMessage.content);
+
+    const encoder = new TextEncoder();
+    return new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of result.stream) {
+            const text = chunk.text();
+            if (text) {
+              controller.enqueue(encoder.encode(text));
+            }
+          }
+          controller.close();
+        } catch (err) {
+          controller.error(err);
+        }
+      },
+    });
+  }
+
+  async generateJSON(
+    prompt: string,
+    systemPrompt: string
+  ): Promise<ReadableStream<Uint8Array>> {
+    const model = this.client.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      systemInstruction: systemPrompt,
+      generationConfig: {
+        maxOutputTokens: 16384,
+        responseMimeType: "application/json",
+      } as GeminiGenerationConfig,
+    });
+
+    const result = await model.generateContentStream(prompt);
 
     const encoder = new TextEncoder();
     return new ReadableStream({

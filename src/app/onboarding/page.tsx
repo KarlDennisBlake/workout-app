@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChatOnboarding } from "@/components/ChatOnboarding";
+import { IntakeForm } from "@/components/IntakeForm";
 import { UserProfile, Weeks } from "@/data/types";
 
 export default function OnboardingPage() {
@@ -19,5 +19,5 @@ export default function OnboardingPage() {
     router.push("/workout");
   }
 
-  return <ChatOnboarding onComplete={handleComplete} />;
+  return <IntakeForm onComplete={handleComplete} />;
 }
