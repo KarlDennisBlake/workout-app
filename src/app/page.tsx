@@ -1,51 +1,67 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { useState, useMemo } from "react";
+import { defaultWeeks } from "@/data/defaultWeeks";
+import { WorkoutOverrides } from "@/data/types";
+import { applyOverrides } from "@/data/mergeOverrides";
+import { useLocalStorageHydrated } from "@/hooks/useLocalStorage";
+import { useWorkoutState } from "@/hooks/useWorkoutState";
+import { useEditMode } from "@/hooks/useEditMode";
+import { Header } from "@/components/Header";
+import { ProgressBar } from "@/components/ProgressBar";
+import { WeekNav } from "@/components/WeekNav";
+import { WeekView } from "@/components/WeekView";
 
 export default function Home() {
-  const router = useRouter();
+  const [overrides, setOverrides, ovHydrated] =
+    useLocalStorageHydrated<WorkoutOverrides>("workout_overrides", {});
+
+  const editMode = useEditMode(overrides, setOverrides);
+
+  const activeOverrides = editMode.editingKey ? editMode.draft : overrides;
+  const routine = useMemo(
+    () => applyOverrides(defaultWeeks, activeOverrides),
+    [activeOverrides]
+  );
+
+  const weekNumbers = Object.keys(routine).map(Number);
+  const [activeWeek, setActiveWeek] = useState(weekNumbers[0] || 1);
+
+  const {
+    hydrated,
+    toggleExercise,
+    toggleDay,
+    getWeekProgress,
+    getDayState,
+  } = useWorkoutState(routine);
+
+  if (!ovHydrated || !hydrated) {
+    return <div className="loading-skeleton">Loading...</div>;
+  }
+
+  const { completed, total } = getWeekProgress(activeWeek);
 
   return (
-    <div className="welcome-container">
-      <header className="welcome-header">
-        <div className="hdr-title">
-          <h1 style={{ fontFamily: "var(--font-syne), 'Syne', sans-serif" }}>
-            Your Workout
-          </h1>
-          <p>4-Week Training Program</p>
-        </div>
-        <ThemeToggle />
-      </header>
-
-      <main className="welcome-hero">
-        <h2
-          className="welcome-heading"
-          style={{ fontFamily: "var(--font-syne), 'Syne', sans-serif" }}
-        >
-          Build a workout routine
-          <br />
-          that fits your life.
-        </h2>
-
-        <p className="welcome-desc">
-          A focused 4-week program with progressive overload.
-          Track your sets, reps, and push-up goals day by day.
-        </p>
-
-        <button
-          className="welcome-cta"
-          onClick={() => router.push("/workout")}
-        >
-          Get Started
-        </button>
-
-        <div className="welcome-features">
-          <span className="welcome-pill">Personalized</span>
-          <span className="welcome-pill">4-Week Plans</span>
-          <span className="welcome-pill">Track Progress</span>
-        </div>
+    <>
+      <Header />
+      <ProgressBar completed={completed} total={total} />
+      <WeekNav
+        weekNumbers={weekNumbers}
+        activeWeek={activeWeek}
+        onSelectWeek={setActiveWeek}
+      />
+      <main>
+        {routine[activeWeek] && (
+          <WeekView
+            week={routine[activeWeek]}
+            weekNumber={activeWeek}
+            getDayState={getDayState}
+            onToggleEx={toggleExercise}
+            onToggleDay={toggleDay}
+            editMode={editMode}
+          />
+        )}
       </main>
-    </div>
+    </>
   );
 }
