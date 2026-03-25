@@ -1,45 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
 import { defaultWeeks } from "@/data/defaultWeeks";
-import { Weeks, UserProfile } from "@/data/types";
+import { WorkoutOverrides } from "@/data/types";
+import { applyOverrides } from "@/data/mergeOverrides";
+import { useLocalStorageHydrated } from "@/hooks/useLocalStorage";
 import { useWorkoutState } from "@/hooks/useWorkoutState";
+import { useEditMode } from "@/hooks/useEditMode";
 import { Header } from "@/components/Header";
 import { ProgressBar } from "@/components/ProgressBar";
 import { WeekNav } from "@/components/WeekNav";
 import { WeekView } from "@/components/WeekView";
 
 export default function WorkoutPage() {
-  const router = useRouter();
-  const [routine, setRoutine] = useState<Weeks>(defaultWeeks);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [overrides, setOverrides, ovHydrated] =
+    useLocalStorageHydrated<WorkoutOverrides>("workout_overrides", {});
 
-  useEffect(() => {
-    try {
-      const savedRoutine = localStorage.getItem("workout_routine");
-      if (savedRoutine) {
-        const parsed = JSON.parse(savedRoutine);
-        // Convert string keys to numbers
-        const numbered: Weeks = {};
-        for (const key in parsed) {
-          numbered[Number(key)] = parsed[key];
-        }
-        if (Object.keys(numbered).length > 0) {
-          setRoutine(numbered);
-        }
-      }
+  const editMode = useEditMode(overrides, setOverrides);
 
-      const savedProfile = localStorage.getItem("workout_profile");
-      if (savedProfile) {
-        setProfile(JSON.parse(savedProfile));
-      }
-    } catch {
-      // Use defaults
-    }
-    setLoaded(true);
-  }, []);
+  // When editing, use draft overrides for live preview; otherwise use saved
+  const activeOverrides = editMode.editingKey ? editMode.draft : overrides;
+  const routine = useMemo(
+    () => applyOverrides(defaultWeeks, activeOverrides),
+    [activeOverrides]
+  );
 
   const weekNumbers = Object.keys(routine).map(Number);
   const [activeWeek, setActiveWeek] = useState(weekNumbers[0] || 1);
@@ -52,24 +36,15 @@ export default function WorkoutPage() {
     getDayState,
   } = useWorkoutState(routine);
 
-  if (!loaded || !hydrated) {
+  if (!ovHydrated || !hydrated) {
     return <div className="loading-skeleton">Loading...</div>;
   }
 
   const { completed, total } = getWeekProgress(activeWeek);
 
-  // Build header stats from profile or defaults
-  const headerHeight = profile?.height || '5\'6"';
-  const headerWeight = profile
-    ? `${profile.weight} ${profile.weightUnit}`
-    : "140 lb";
-
   return (
     <>
-      <Header
-        height={headerHeight}
-        weight={headerWeight}
-      />
+      <Header />
       <ProgressBar completed={completed} total={total} />
       <WeekNav
         weekNumbers={weekNumbers}
@@ -77,44 +52,6 @@ export default function WorkoutPage() {
         onSelectWeek={setActiveWeek}
       />
       <main>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginBottom: "0.5rem" }}>
-          {profile && (
-            <button
-              onClick={() => router.push("/edit")}
-              style={{
-                background: "none",
-                border: "1px solid var(--border)",
-                borderRadius: "6px",
-                padding: "0.35rem 0.8rem",
-                fontSize: "0.7rem",
-                color: "var(--muted)",
-                cursor: "pointer",
-                fontFamily: "inherit",
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-              }}
-            >
-              Edit Routine
-            </button>
-          )}
-          <button
-            onClick={() => router.push("/onboarding")}
-            style={{
-              background: "none",
-              border: "1px solid var(--border)",
-              borderRadius: "6px",
-              padding: "0.35rem 0.8rem",
-              fontSize: "0.7rem",
-              color: "var(--muted)",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
-            }}
-          >
-            {profile ? "Rebuild Routine" : "Create Custom Routine"}
-          </button>
-        </div>
         {routine[activeWeek] && (
           <WeekView
             week={routine[activeWeek]}
@@ -122,6 +59,7 @@ export default function WorkoutPage() {
             getDayState={getDayState}
             onToggleEx={toggleExercise}
             onToggleDay={toggleDay}
+            editMode={editMode}
           />
         )}
       </main>

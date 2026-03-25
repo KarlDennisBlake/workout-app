@@ -5,12 +5,24 @@ import { WeekIntro } from "./WeekIntro";
 import { DayCard } from "./DayCard";
 import { PushupTracker } from "./PushupTracker";
 
+interface EditMode {
+  isEditing: (weekNum: number, dayIndex: number) => boolean;
+  enterEditMode: (weekNum: number, dayIndex: number) => void;
+  commitEdits: () => void;
+  cancelEdits: () => void;
+  removeBlock: (weekNum: number, dayIndex: number, blockIndex: number) => void;
+  removeExercise: (weekNum: number, dayIndex: number, blockIndex: number, exIndex: number) => void;
+  updateExercise: (weekNum: number, dayIndex: number, blockIndex: number, exIndex: number, field: "name" | "detail", value: string) => void;
+  editingKey: { weekNum: number; dayIndex: number } | null;
+}
+
 interface WeekViewProps {
   week: WeekData;
   weekNumber: number;
   getDayState: (weekNum: number, dayIndex: number) => DayState;
   onToggleEx: (weekNum: number, dayIndex: number, exIndex: number) => void;
   onToggleDay: (weekNum: number, dayIndex: number) => void;
+  editMode: EditMode;
 }
 
 export function WeekView({
@@ -19,6 +31,7 @@ export function WeekView({
   getDayState,
   onToggleEx,
   onToggleDay,
+  editMode,
 }: WeekViewProps) {
   return (
     <>
@@ -29,9 +42,20 @@ export function WeekView({
             key={di}
             day={day}
             dayIndex={di}
+            weekNumber={weekNumber}
             state={getDayState(weekNumber, di)}
             onToggleEx={(exIdx) => onToggleEx(weekNumber, di, exIdx)}
             onToggleDay={() => onToggleDay(weekNumber, di)}
+            isEditing={editMode.isEditing(weekNumber, di)}
+            onEnterEdit={() => editMode.enterEditMode(weekNumber, di)}
+            onSaveEdit={editMode.commitEdits}
+            onCancelEdit={editMode.cancelEdits}
+            onRemoveBlock={(bi) => editMode.removeBlock(weekNumber, di, bi)}
+            onRemoveExercise={(bi, ei) => editMode.removeExercise(weekNumber, di, bi, ei)}
+            onUpdateExercise={(bi, ei, field, value) =>
+              editMode.updateExercise(weekNumber, di, bi, ei, field, value)
+            }
+            editingAny={editMode.editingKey !== null}
           />
         ))}
       </div>

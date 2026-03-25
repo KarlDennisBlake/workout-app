@@ -5,7 +5,7 @@ export interface Exercise {
 
 export interface Block {
   label: string;
-  time: string;
+  time?: string;
   exercises: Exercise[];
 }
 
@@ -63,3 +63,21 @@ export interface DayState {
 
 export type WeekState = Record<number, DayState>;
 export type WorkoutProgress = Record<number, WeekState>;
+
+// Sparse override types for inline editing
+export type ExerciseOverride = {
+  deleted?: boolean;
+  name?: string;
+  detail?: string;
+};
+
+export type BlockOverride = {
+  deleted?: boolean;
+  exercises?: Record<number, ExerciseOverride>;
+};
+
+export type DayOverride = {
+  blocks?: Record<number, BlockOverride>;
+};
+
+export type WorkoutOverrides = Record<number, Record<number, DayOverride>>;

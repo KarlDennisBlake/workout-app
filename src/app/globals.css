@@ -254,6 +254,10 @@ main { padding: 2rem 2.5rem; max-width: 960px; }
   border-radius: 8px;
   overflow: hidden;
   transition: box-shadow 0.2s, border-color 0.2s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 .day-card:hover { box-shadow: 0 3px 16px rgba(0,0,0,0.07); }
@@ -358,6 +362,24 @@ main { padding: 2rem 2.5rem; max-width: 960px; }
   gap: 0.5rem;
 }
 
+.cal-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.15rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s;
+}
+.cal-btn:hover {
+  opacity: 1;
+  color: var(--accent2);
+}
+
 .block-time {
   background: var(--surface);
   border-radius: 3px;
@@ -404,6 +426,130 @@ main { padding: 2rem 2.5rem; max-width: 960px; }
   color: var(--muted);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+/* ── EDIT MODE ── */
+.day-card.editing {
+  border: 1.5px solid var(--accent);
+  box-shadow: 0 0 12px rgba(100, 200, 100, 0.1);
+}
+
+.dch-editing-hint {
+  font-size: 0.6rem;
+  color: var(--accent);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.edit-save-btn, .edit-cancel-btn {
+  font-family: inherit;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.45rem 0.9rem;
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.edit-save-btn {
+  background: var(--accent);
+  color: #fff;
+}
+.edit-save-btn:hover { opacity: 0.85; }
+
+.edit-cancel-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.edit-cancel-btn:hover { color: var(--fg); border-color: var(--fg); }
+
+.remove-block-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #e55;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.3rem 0.5rem;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.remove-block-btn:hover { opacity: 1; }
+
+.remove-ex-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid #e55;
+  background: none;
+  color: #e55;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.remove-ex-btn:hover { opacity: 1; background: #e55; color: #fff; }
+
+.editing-row {
+  cursor: default;
+}
+.editing-row:hover { background: transparent; }
+
+.editable-field {
+  cursor: text;
+  border-bottom: 1px dashed var(--border);
+  padding: 0.35rem 0.2rem;
+  min-height: 2.2rem;
+  display: inline-flex;
+  align-items: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.editable-field:hover {
+  border-bottom-color: var(--accent);
+}
+
+.inline-input {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  padding: 0.4rem 0.4rem;
+  min-height: 2.2rem;
+  outline: none;
+  -webkit-appearance: none;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.inline-input.ex-detail {
+  width: 5rem;
+  text-align: right;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+.inline-input.ex-name {
+  flex: 1;
+  font-size: 0.8rem;
 }
 
 .pushup-goal {

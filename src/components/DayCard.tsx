@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Day, DayState } from "@/data/types";
 import { DayCardHeader } from "./DayCardHeader";
 import { ExerciseBlock } from "./ExerciseBlock";
@@ -11,17 +11,40 @@ import { RestDayBody } from "./RestDayBody";
 interface DayCardProps {
   day: Day;
   dayIndex: number;
+  weekNumber: number;
   state: DayState;
   onToggleEx: (exIndex: number) => void;
   onToggleDay: () => void;
+  isEditing: boolean;
+  onEnterEdit: () => void;
+  onSaveEdit: () => void;
+  onCancelEdit: () => void;
+  onRemoveBlock: (blockIndex: number) => void;
+  onRemoveExercise: (blockIndex: number, exIndex: number) => void;
+  onUpdateExercise: (
+    blockIndex: number,
+    exIndex: number,
+    field: "name" | "detail",
+    value: string
+  ) => void;
+  editingAny: boolean;
 }
 
 export function DayCard({
   day,
   dayIndex,
+  weekNumber,
   state,
   onToggleEx,
   onToggleDay,
+  isEditing,
+  onEnterEdit,
+  onSaveEdit,
+  onCancelEdit,
+  onRemoveBlock,
+  onRemoveExercise,
+  onUpdateExercise,
+  editingAny,
 }: DayCardProps) {
   const isDone =
     state.done || (state.ex.length > 0 && state.ex.every(Boolean));
@@ -29,22 +52,58 @@ export function DayCard({
   const [collapsed, setCollapsed] = useState(isDone);
   const prevDone = useRef(isDone);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Auto-collapse when all exercises are checked off,
-  // auto-expand when unchecked (e.g. via the done button)
+  // Auto-collapse when all exercises are checked off (but not while editing)
   useEffect(() => {
+    if (isEditing) return;
     if (isDone !== prevDone.current) {
       setCollapsed(isDone);
       prevDone.current = isDone;
     }
-  }, [isDone]);
+  }, [isDone, isEditing]);
+
+  // Force expand when entering edit mode
+  useEffect(() => {
+    if (isEditing) setCollapsed(false);
+  }, [isEditing]);
 
   const handleHeaderClick = () => {
+    if (isEditing) return;
     setCollapsed((prev) => !prev);
   };
 
+  // Long-press detection
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (day.restDay || editingAny) return;
+      longPressTimer.current = setTimeout(() => {
+        longPressTimer.current = null;
+        if (navigator.vibrate) navigator.vibrate(30);
+        onEnterEdit();
+      }, 500);
+    },
+    [day.restDay, editingAny, onEnterEdit]
+  );
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
   return (
-    <div className={`day-card${isDone ? " done" : ""}${collapsed ? " collapsed" : ""}`}>
+    <div
+      className={`day-card${isDone ? " done" : ""}${collapsed ? " collapsed" : ""}${isEditing ? " editing" : ""}`}
+      onPointerDown={handlePointerDown}
+      onPointerUp={cancelLongPress}
+      onPointerLeave={cancelLongPress}
+      onPointerCancel={cancelLongPress}
+      onContextMenu={(e) => {
+        if (!day.restDay) e.preventDefault();
+      }}
+    >
       <DayCardHeader
         name={day.name}
         tag={day.tag}
@@ -54,6 +113,9 @@ export function DayCard({
         onToggleDone={onToggleDay}
         onHeaderClick={handleHeaderClick}
         collapsed={collapsed}
+        isEditing={isEditing}
+        onSaveEdit={onSaveEdit}
+        onCancelEdit={onCancelEdit}
       />
       <div
         ref={bodyRef}
@@ -75,9 +137,17 @@ export function DayCard({
                   <ExerciseBlock
                     key={bi}
                     block={block}
+                    blockIndex={bi}
+                    dayName={day.name}
                     exerciseStartIndex={startIdx}
                     exerciseStates={state.ex}
                     onToggle={onToggleEx}
+                    isEditing={isEditing}
+                    onRemoveBlock={() => onRemoveBlock(bi)}
+                    onRemoveExercise={(ei) => onRemoveExercise(bi, ei)}
+                    onUpdateExercise={(ei, field, value) =>
+                      onUpdateExercise(bi, ei, field, value)
+                    }
                   />
                 );
               })}
