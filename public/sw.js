@@ -1,4 +1,4 @@
-const CACHE_NAME = "workout-v1";
+const CACHE_NAME = "workout-v2";
 const PRECACHE_URLS = ["/workout", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
