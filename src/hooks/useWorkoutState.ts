@@ -117,6 +117,10 @@ export function useWorkoutState(routine: Weeks) {
     [progress]
   );
 
+  const resetProgress = useCallback(() => {
+    setProgress(initProgress(routine));
+  }, [routine, setProgress]);
+
   return {
     progress,
     hydrated,
@@ -124,5 +128,6 @@ export function useWorkoutState(routine: Weeks) {
     toggleDay,
     getWeekProgress,
     getDayState,
+    resetProgress,
   };
 }

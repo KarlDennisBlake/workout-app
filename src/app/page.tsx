@@ -33,6 +33,7 @@ export default function Home() {
     toggleDay,
     getWeekProgress,
     getDayState,
+    resetProgress,
   } = useWorkoutState(routine);
 
   if (!ovHydrated || !hydrated) {
@@ -61,6 +62,18 @@ export default function Home() {
             editMode={editMode}
           />
         )}
+        <div className="reset-footer">
+          <button
+            className="reset-btn"
+            onClick={() => {
+              if (confirm("Uncheck everything and start fresh?")) {
+                resetProgress();
+              }
+            }}
+          >
+            Start Fresh
+          </button>
+        </div>
       </main>
     </>
   );
