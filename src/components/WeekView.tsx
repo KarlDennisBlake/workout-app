@@ -23,6 +23,8 @@ interface WeekViewProps {
   onToggleEx: (weekNum: number, dayIndex: number, exIndex: number) => void;
   onToggleDay: (weekNum: number, dayIndex: number) => void;
   editMode: EditMode;
+  toggleSet: (weekNum: number, dayIdx: number, exIdx: number, setIdx: number, totalSets: number) => void;
+  getSetStates: (weekNum: number, dayIdx: number, exIdx: number, totalSets: number) => boolean[];
 }
 
 export function WeekView({
@@ -32,6 +34,8 @@ export function WeekView({
   onToggleEx,
   onToggleDay,
   editMode,
+  toggleSet,
+  getSetStates,
 }: WeekViewProps) {
   return (
     <>
@@ -56,6 +60,8 @@ export function WeekView({
               editMode.updateExercise(weekNumber, di, bi, ei, field, value)
             }
             editingAny={editMode.editingKey !== null}
+            toggleSet={(exIdx, setIdx, totalSets) => toggleSet(weekNumber, di, exIdx, setIdx, totalSets)}
+            getSetStates={(exIdx, totalSets) => getSetStates(weekNumber, di, exIdx, totalSets)}
           />
         ))}
       </div>

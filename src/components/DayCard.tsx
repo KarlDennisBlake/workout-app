@@ -28,6 +28,8 @@ interface DayCardProps {
     value: string
   ) => void;
   editingAny: boolean;
+  toggleSet: (exIdx: number, setIdx: number, totalSets: number) => void;
+  getSetStates: (exIdx: number, totalSets: number) => boolean[];
 }
 
 export function DayCard({
@@ -45,6 +47,8 @@ export function DayCard({
   onRemoveExercise,
   onUpdateExercise,
   editingAny,
+  toggleSet,
+  getSetStates,
 }: DayCardProps) {
   const isDone =
     state.done || (state.ex.length > 0 && state.ex.every(Boolean));
@@ -148,6 +152,8 @@ export function DayCard({
                     onUpdateExercise={(ei, field, value) =>
                       onUpdateExercise(bi, ei, field, value)
                     }
+                    toggleSet={toggleSet}
+                    getSetStates={getSetStates}
                   />
                 );
               })}

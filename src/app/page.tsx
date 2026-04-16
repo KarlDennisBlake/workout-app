@@ -34,6 +34,8 @@ export default function Home() {
     getWeekProgress,
     getDayState,
     resetProgress,
+    toggleSet,
+    getSetStates,
   } = useWorkoutState(routine);
 
   if (!ovHydrated || !hydrated) {
@@ -60,6 +62,8 @@ export default function Home() {
             onToggleEx={toggleExercise}
             onToggleDay={toggleDay}
             editMode={editMode}
+            toggleSet={toggleSet}
+            getSetStates={getSetStates}
           />
         )}
         <div className="reset-footer">

@@ -11,6 +11,17 @@ interface ExerciseRowProps {
   onRemove?: () => void;
   onUpdateDetail?: (value: string) => void;
   onUpdateName?: (value: string) => void;
+  toggleSet: (setIdx: number, totalSets: number) => void;
+  getSetStates: (totalSets: number) => boolean[];
+}
+
+// Parse "4×25" or "3x12" → { count: 4, label: "25" }. Returns null for non-set details.
+function parseSetDetail(detail: string): { count: number; label: string } | null {
+  const match = detail.trim().match(/^(\d+)[×x](.+)$/);
+  if (!match) return null;
+  const count = parseInt(match[1], 10);
+  if (count < 2 || count > 20) return null;
+  return { count, label: match[2].trim() };
 }
 
 function InlineInput({
@@ -86,7 +97,12 @@ export function ExerciseRow({
   onRemove,
   onUpdateDetail,
   onUpdateName,
+  toggleSet,
+  getSetStates,
 }: ExerciseRowProps) {
+  const parsed = parseSetDetail(detail);
+  const setStates = parsed ? getSetStates(parsed.count) : [];
+
   if (isEditing) {
     return (
       <div className="ex-row editing-row">
@@ -115,13 +131,28 @@ export function ExerciseRow({
   }
 
   return (
-    <div
-      className={`ex-row${checked ? " checked" : ""}`}
-      onClick={onToggle}
-    >
-      <div className="ex-cb" />
-      <div className="ex-name">{name}</div>
-      <div className="ex-detail">{detail}</div>
+    <div className={`ex-row-wrap${checked ? " checked" : ""}`}>
+      <div className="ex-row" onClick={onToggle}>
+        <div className="ex-cb" />
+        <div className="ex-name">{name}</div>
+        {!parsed && <div className="ex-detail">{detail}</div>}
+      </div>
+      {parsed && (
+        <div className="set-bubbles">
+          {Array.from({ length: parsed.count }, (_, i) => (
+            <button
+              key={i}
+              className={`set-bubble${setStates[i] ? " done" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleSet(i, parsed.count);
+              }}
+            >
+              {parsed.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

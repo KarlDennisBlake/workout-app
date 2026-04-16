@@ -388,6 +388,11 @@ main { padding: 2rem 2.5rem; max-width: 960px; }
   color: var(--accent2);
 }
 
+.ex-row-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
 .ex-row {
   display: flex;
   align-items: center;
@@ -408,8 +413,8 @@ main { padding: 2rem 2.5rem; max-width: 960px; }
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s;
 }
-.ex-row.checked .ex-cb { background: var(--accent); border-color: var(--accent); }
-.ex-row.checked .ex-cb::after { content: '\2713'; font-size: 9px; color: #fff; font-weight: 700; }
+.ex-row-wrap.checked .ex-cb { background: var(--accent); border-color: var(--accent); }
+.ex-row-wrap.checked .ex-cb::after { content: '\2713'; font-size: 9px; color: #fff; font-weight: 700; }
 
 .ex-name {
   flex: 1;
@@ -417,9 +422,40 @@ main { padding: 2rem 2.5rem; max-width: 960px; }
   font-weight: 400;
   transition: color 0.15s;
 }
-.ex-row.checked .ex-name { color: #bbb; text-decoration: line-through; }
+.ex-row-wrap.checked .ex-name { color: #bbb; text-decoration: line-through; }
 
-[data-theme="dark"] .ex-row.checked .ex-name { color: #666; }
+[data-theme="dark"] .ex-row-wrap.checked .ex-name { color: #666; }
+
+/* ── SET BUBBLES ── */
+.set-bubbles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.1rem 0 0.4rem 1.6rem; /* align under ex-name, past the checkbox */
+}
+
+.set-bubble {
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  padding: 0.2rem 0.55rem;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  line-height: 1.4;
+}
+.set-bubble:hover { background: var(--surface); }
+.set-bubble.done {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+[data-theme="dark"] .set-bubble.done { color: #fff; }
 
 .ex-detail {
   font-size: 0.7rem;

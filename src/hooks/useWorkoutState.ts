@@ -4,6 +4,9 @@ import { useCallback, useEffect } from "react";
 import { Weeks, WorkoutProgress, DayState } from "@/data/types";
 import { useLocalStorageHydrated } from "./useLocalStorage";
 
+// weekNum → dayIdx → exIdx → boolean[] (one per set)
+type SetsProgress = Record<number, Record<number, Record<number, boolean[]>>>;
+
 function initProgress(routine: Weeks): WorkoutProgress {
   const progress: WorkoutProgress = {};
   for (const w in routine) {
@@ -46,6 +49,11 @@ export function useWorkoutState(routine: Weeks) {
   const [progress, setProgress, hydrated] = useLocalStorageHydrated<WorkoutProgress>(
     "workout_progress",
     initProgress(routine)
+  );
+
+  const [setsProgress, setSetsProgress] = useLocalStorageHydrated<SetsProgress>(
+    "workout_sets",
+    {}
   );
 
   useEffect(() => {
@@ -117,9 +125,46 @@ export function useWorkoutState(routine: Weeks) {
     [progress]
   );
 
+  const toggleSet = useCallback(
+    (weekNum: number, dayIdx: number, exIdx: number, setIdx: number, totalSets: number) => {
+      setSetsProgress((prev) => {
+        const next: SetsProgress = JSON.parse(JSON.stringify(prev));
+        if (!next[weekNum]) next[weekNum] = {};
+        if (!next[weekNum][dayIdx]) next[weekNum][dayIdx] = {};
+        if (!next[weekNum][dayIdx][exIdx]) {
+          next[weekNum][dayIdx][exIdx] = new Array(totalSets).fill(false);
+        }
+        next[weekNum][dayIdx][exIdx][setIdx] = !next[weekNum][dayIdx][exIdx][setIdx];
+
+        // Auto-check the main exercise checkbox when all sets are done
+        const allDone = next[weekNum][dayIdx][exIdx].every(Boolean);
+        if (allDone) {
+          setProgress((p) => {
+            const np: WorkoutProgress = JSON.parse(JSON.stringify(p));
+            if (np[weekNum]?.[dayIdx]) {
+              np[weekNum][dayIdx].ex[exIdx] = true;
+            }
+            return np;
+          });
+        }
+
+        return next;
+      });
+    },
+    [setSetsProgress, setProgress]
+  );
+
+  const getSetStates = useCallback(
+    (weekNum: number, dayIdx: number, exIdx: number, totalSets: number): boolean[] => {
+      return setsProgress[weekNum]?.[dayIdx]?.[exIdx] ?? new Array(totalSets).fill(false);
+    },
+    [setsProgress]
+  );
+
   const resetProgress = useCallback(() => {
     setProgress(initProgress(routine));
-  }, [routine, setProgress]);
+    setSetsProgress({});
+  }, [routine, setProgress, setSetsProgress]);
 
   return {
     progress,
@@ -129,5 +174,7 @@ export function useWorkoutState(routine: Weeks) {
     getWeekProgress,
     getDayState,
     resetProgress,
+    toggleSet,
+    getSetStates,
   };
 }

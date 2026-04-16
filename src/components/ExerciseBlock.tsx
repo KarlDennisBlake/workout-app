@@ -14,6 +14,8 @@ interface ExerciseBlockProps {
   onRemoveBlock?: () => void;
   onRemoveExercise?: (exIndex: number) => void;
   onUpdateExercise?: (exIndex: number, field: "name" | "detail", value: string) => void;
+  toggleSet: (exIdx: number, setIdx: number, totalSets: number) => void;
+  getSetStates: (exIdx: number, totalSets: number) => boolean[];
 }
 
 function buildCalendarUrl(block: Block, dayName: string): string {
@@ -44,6 +46,8 @@ export function ExerciseBlock({
   onRemoveBlock,
   onRemoveExercise,
   onUpdateExercise,
+  toggleSet,
+  getSetStates,
 }: ExerciseBlockProps) {
   return (
     <>
@@ -92,6 +96,8 @@ export function ExerciseBlock({
             onRemove={() => onRemoveExercise?.(i)}
             onUpdateDetail={(value) => onUpdateExercise?.(i, "detail", value)}
             onUpdateName={(value) => onUpdateExercise?.(i, "name", value)}
+            toggleSet={(setIdx, totalSets) => toggleSet(globalIdx, setIdx, totalSets)}
+            getSetStates={(totalSets) => getSetStates(globalIdx, totalSets)}
           />
         );
       })}
